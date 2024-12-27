@@ -33,7 +33,7 @@ class Settings:
         self.__pose_min_tracking_confidence  = 0.5
 
         # Utility settings
-        self.__util_archer_outline_mode       = True
+        self.__util_archer_outline_mode       = False
 
     def pose_static_image_mode(self):
         return self.__pose_static_image_mode
