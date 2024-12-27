@@ -38,12 +38,26 @@ class Settings:
     def pose_static_image_mode(self):
         return self.__pose_static_image_mode
 
-    def pose_static_image_mode(self, val):
+    def set_pose_static_image_mode(self, val):
         self.__pose_static_image_mode = val
 
     def pose_model_complexity(self):
         return self.__pose_model_complexity
 
-    def pose_model_complexity(self, val):
+    def set_pose_model_complexity(self, val):
         self.__pose_model_complexity = val
+
+    def pose_min_detection_confidence(self):
+        return self.__pose_min_detection_confidence
     
+    def set_pose_min_detection_confidence(self, val):
+        self.__pose_min_detection_confidence = val
+    
+    def pose_min_tracking_confidence(self):
+        return self.__pose_min_tracking_confidence
+
+    def set_pose_min_tracking_confidence(self, val):
+        self.__pose_min_tracking_confidence = val 
+
+
+global_settings = Settings()

@@ -40,56 +40,7 @@ import tkinter as tk
 from tkinter import messagebox
 import threading
 from PIL import Image, ImageTk
-
-def process_camera_input(cam_id):
-    # Initialize MediaPipe Pose and Drawing utilities
-    mp_pose = mp.solutions.pose
-    mp_drawing = mp.solutions.drawing_utils
-
-    # Set up the Pose model
-    pose = mp_pose.Pose(
-        static_image_mode=False,  # Use temporal smoothing
-        model_complexity=1,       
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5
-    )
-
-    # Open the default camera (ID 0)
-    cap = cv2.VideoCapture(cam_id)  # Change the ID for other cameras (e.g., 1, 2)
-    if not cap.isOpened():
-        print("Error: Unable to access the camera.")
-        return
-
-    print("Press 'q' to quit.")
-    
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Error: Unable to capture frame from the camera.")
-            break
-
-        # Convert the frame to RGB (MediaPipe expects RGB input)
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # Process the frame with MediaPipe
-        result = pose.process(frame_rgb)
-
-        # Draw pose landmarks if detected
-        if result.pose_landmarks:
-            mp_drawing.draw_landmarks(
-                frame, result.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-
-        # Display the frame
-        cv2.imshow("FormTrainer", frame)
-
-        # Break the loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    # Release the camera and close windows
-    cap.release()
-    cv2.destroyAllWindows()
-    pose.close()
+from settings import global_settings
 
 def process_video(input_file, output_file):
     # Initialize MediaPipe pose detection
@@ -157,13 +108,11 @@ def process_camera(canvas, apply_filter, cam_id, stop_event):
 
     # Set up the Pose model
     pose = mp_pose.Pose(
-        static_image_mode=False,  # Use temporal smoothing
-        model_complexity=1,       
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5
+        static_image_mode        = global_settings.pose_static_image_mode(),
+        model_complexity         = global_settings.pose_model_complexity(),       
+        min_detection_confidence = global_settings.pose_min_detection_confidence(),
+        min_tracking_confidence  = global_settings.pose_min_tracking_confidence()
     )
-
-    """Read and display frames on a tkinter Canvas."""
 
     cap = cv2.VideoCapture(cam_id)  # Change the ID for other cameras (e.g., 1, 2)
     if not cap.isOpened():
@@ -213,7 +162,7 @@ def start_cameras(root):
     tk.messagebox.showinfo("Info", f"{len(cam_ids)} camera(s) were found")
 
     second_window = tk.Toplevel(root)
-    second_window.title("Camera")
+    second_window.title(f"Camera (model complexity: {global_settings.pose_model_complexity()})")
 
     canvas = tk.Canvas(second_window, width=640, height=480)
     canvas.grid(row=0, column=0)
@@ -226,12 +175,12 @@ def start_cameras(root):
     close_button = tk.Button(second_window, text="Close", command=second_window.destroy)
     close_button.grid(row=1, column=0, columnspan=2)
 
-
 def add_model_complexity_opt(root, target_row):
     label = tk.Label(root, text="Select model complexity:")
     label.grid(row=target_row, column=0, padx=10, pady=10)
 
-    complexity_scale = tk.Scale(root, from_=0, to=2, orient=tk.HORIZONTAL)
+    complexity_scale = tk.Scale(root, from_=0, to=2, orient=tk.HORIZONTAL, 
+                                command=lambda v: global_settings.set_pose_model_complexity(int(v)))
     complexity_scale.grid(row=target_row, column=1, padx=10, pady=10)
     complexity_scale.set(1)
 
@@ -257,8 +206,7 @@ def start_gui():
 
     add_model_complexity_opt(root, 0)
     add_min_detection_confidence_opt(root, 1)
-    add_apply_button(root, 2)
-    start_cameras_button(root, 3)
+    start_cameras_button(root, 2)
 
     root.mainloop()
 
