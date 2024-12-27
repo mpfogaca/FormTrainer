@@ -32,8 +32,8 @@ class Settings:
         self.__pose_min_detection_confidence = 0.5
         self.__pose_min_tracking_confidence  = 0.5
 
-        # GUI-related settings:
-        self.__gui_archer_outline_mode       = False
+        # Utility settings
+        self.__util_archer_outline_mode       = True
 
     def pose_static_image_mode(self):
         return self.__pose_static_image_mode
@@ -58,6 +58,12 @@ class Settings:
 
     def set_pose_min_tracking_confidence(self, val):
         self.__pose_min_tracking_confidence = val 
+
+    def util_archer_outline_mode(self):
+        return self.__util_archer_outline_mode
+
+    def set_util_archer_outline_mode(self, val):
+        self.__util_archer_outline_mode = val 
 
 
 global_settings = Settings()

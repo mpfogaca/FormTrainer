@@ -43,6 +43,26 @@ import threading
 from PIL import Image, ImageTk
 from settings import global_settings
 
+def process_frame(pose, frame, canvas_width, canvas_height, drawing_utils, force_bgr = False):
+    # Convert the frame to RGB for tkinter
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    frame = cv2.resize(frame, (canvas_width, canvas_height))
+
+    result = pose.process(frame)
+
+    if global_settings.util_archer_outline_mode():
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame = cv2.Canny(frame, threshold1=75, threshold2=150)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    if result.pose_landmarks:
+        drawing_utils.draw_landmarks(frame, result.pose_landmarks, mp.solutions.pose.POSE_CONNECTIONS)
+
+    if force_bgr:
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+    return frame
+
 def process_video_file(root):
     # Initialize MediaPipe pose detection
     mp_pose = mp.solutions.pose
@@ -88,22 +108,12 @@ def process_video_file(root):
     out = cv2.VideoWriter(output_file, fourcc, fps, (frame_width, frame_height))
 
     with tqdm(total=frame_count, desc="Processing Video", unit="frame") as pbar:
-
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
 
-            # Convert the frame to RGB (MediaPipe requires RGB input)
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-            # Perform pose detection
-            result = pose.process(frame_rgb)
-
-            # Draw landmarks and connections on the frame
-            if result.pose_landmarks:
-                mp_drawing.draw_landmarks(
-                    frame, result.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+            frame = process_frame(pose, frame, frame_width, frame_height, mp_drawing, True)
 
             # Write the processed frame to the output video
             out.write(frame)
@@ -116,13 +126,10 @@ def process_video_file(root):
 
     print(f"Processed video saved as {output_file}")
 
-def process_camera(canvas, apply_filter, cam_id, stop_event):
-      # Initialize MediaPipe Pose and Drawing utilities
-    mp_pose = mp.solutions.pose
-    mp_drawing = mp.solutions.drawing_utils
 
+def process_camera(canvas, cam_id, stop_event):
     # Set up the Pose model
-    pose = mp_pose.Pose(
+    pose = mp.solutions.pose.Pose(
         static_image_mode        = global_settings.pose_static_image_mode(),
         model_complexity         = global_settings.pose_model_complexity(),       
         min_detection_confidence = global_settings.pose_min_detection_confidence(),
@@ -142,19 +149,7 @@ def process_camera(canvas, apply_filter, cam_id, stop_event):
         if not ret:
             break
         
-        # Convert the frame to RGB for tkinter
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = cv2.resize(frame, (canvas_width, canvas_height))
-
-        result = pose.process(frame)
-
-        if apply_filter == True:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frame = cv2.Canny(frame, threshold1=75, threshold2=150)
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        if result.pose_landmarks:
-            mp_drawing.draw_landmarks(frame, result.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+        frame = process_frame(pose, frame, canvas_width, canvas_height, mp.solutions.drawing_utils)
 
         img = Image.fromarray(frame)
         img_tk = ImageTk.PhotoImage(image=img)
@@ -183,7 +178,7 @@ def start_cameras(root):
     canvas.grid(row=0, column=0)
 
     stop_event = threading.Event()
-    thread = threading.Thread(target=process_camera, args=(canvas, False, cam_ids[0], stop_event))
+    thread = threading.Thread(target=process_camera, args=(canvas, cam_ids[0], stop_event))
     thread.daemon = True
     thread.start()
 
