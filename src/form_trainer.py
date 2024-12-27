@@ -38,20 +38,37 @@ import os
 from tqdm import tqdm
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import filedialog
 import threading
 from PIL import Image, ImageTk
 from settings import global_settings
 
-def process_video(input_file, output_file):
+def process_video_file(root):
     # Initialize MediaPipe pose detection
     mp_pose = mp.solutions.pose
-    pose = mp_pose.Pose(static_image_mode=False, 
-                        model_complexity=2,         
-                        min_detection_confidence=0.7,
-                        min_tracking_confidence=0.7)
-    #pose = mp_pose.Pose()
+    pose = mp_pose.Pose(
+        static_image_mode        = global_settings.pose_static_image_mode(),
+        model_complexity         = global_settings.pose_model_complexity(),       
+        min_detection_confidence = global_settings.pose_min_detection_confidence(),
+        min_tracking_confidence  = global_settings.pose_min_tracking_confidence() 
+    )
 
     mp_drawing = mp.solutions.drawing_utils
+
+    input_file = filedialog.askopenfilename(
+        title="Select a Video File",
+        filetypes=[("Video files", "*.mp4;*.avi;*.mov;*.MOV;*.mkv"), ("All files", "*.*")]
+    )
+    if not input_file:
+        return
+
+    output_file = filedialog.asksaveasfilename(
+        title="Create output file",
+        defaultextension=".mp4",
+        filetypes=[("Video files", "*.mp4;*.avi;*.mov;*.MOV;*.mkv"), ("All files", "*.*")]
+    )
+    if not output_file:
+        return
 
     # Open the video file
     cap = cv2.VideoCapture(input_file)
@@ -98,8 +115,6 @@ def process_video(input_file, output_file):
     pose.close()
 
     print(f"Processed video saved as {output_file}")
-
-#------------------------
 
 def process_camera(canvas, apply_filter, cam_id, stop_event):
       # Initialize MediaPipe Pose and Drawing utilities
@@ -196,8 +211,12 @@ def add_apply_button(root, target_row):
     submit_button = tk.Button(root, text="Apply setup")
     submit_button.grid(row=target_row, column=0, columnspan=2, pady=10)
 
-def start_cameras_button(root, target_row):
+def add_start_cameras_button(root, target_row):
     submit_button = tk.Button(root, text="Start cameras", command=lambda: start_cameras(root))
+    submit_button.grid(row=target_row, column=0, columnspan=2, pady=10)
+
+def add_process_video_button(root, target_row):
+    submit_button = tk.Button(root, text="Process video file", command=lambda: process_video_file(root))
     submit_button.grid(row=target_row, column=0, columnspan=2, pady=10)
 
 def start_gui():
@@ -206,7 +225,8 @@ def start_gui():
 
     add_model_complexity_opt(root, 0)
     add_min_detection_confidence_opt(root, 1)
-    start_cameras_button(root, 2)
+    add_start_cameras_button(root, 2)
+    add_process_video_button(root, 3)
 
     root.mainloop()
 
